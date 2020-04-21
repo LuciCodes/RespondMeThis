@@ -1,0 +1,29 @@
+[
+  {
+    "path": "/respond-hello",
+    "description": "Hello World with a 201 (created) status",
+    "response": {
+      "code": 201,
+      "responseType": "application/json",
+      "body": {
+        "message": "Hello World from me, the object status 201"
+      }
+    }
+  },
+  {
+    "path": "/respond-file",
+    "description": "Returns the content of a file",
+    "response": {
+      "responseType": "text/html",
+      "filePath": "./content/index.html",
+      "fileEncoding": "utf-8"
+    }
+  },
+  {
+    "path": "/respond-redirect",
+    "description": "Returns a redirect to another path",
+    "response": {
+      "redirectUrl": "/respond-file"
+    }
+  }
+]

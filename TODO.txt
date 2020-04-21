@@ -1,0 +1,10 @@
+
+set delay n times
+
+set next post n times
+
+Accept new routes - POST at new
+
+Serve static files on config
+
+Auto load routes from file names in folder
