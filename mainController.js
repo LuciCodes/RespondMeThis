@@ -1,6 +1,7 @@
 
 const fs = require('fs');
 
+const factory = require('./mainFactory.js');
 
 const mainController = {
 
@@ -13,8 +14,8 @@ const mainController = {
   initialised: false,
 
   endpoints: [
-    { path: '/', description: 'ROOT'  },
-    { path: '/help', description: 'Describes all configured endpoints'  }
+    { path: '/', description: 'ROOT', response: { body: 'EMPTY_RESPONSE' } },
+    { path: '/help', description: 'Describes all configured endpoints', response: { body: 'EMPTY_RESPONSE' }  }
   ],
 
   init: () => {
@@ -79,7 +80,7 @@ const mainController = {
             cnt++;
           }
         }
-        
+
         console.log(`Read [${ cnt }] endpoints on ./endpoints.json.`);
 
         console.log('mainController endpoints:', mainController.endpoints);
@@ -98,7 +99,7 @@ const mainController = {
 
   readEndpoint: (endpointInfo) => {
 
-    let epInfo = mainController.createEndpointObj(endpointInfo);
+    let epInfo = factory.createEndpointObj(endpointInfo);
     
     mainController.endpoints.push(epInfo);
   },
@@ -109,7 +110,7 @@ const mainController = {
 
     for (let e = 0; e < mainController.endpoints.length; e++) {
 
-      let epInfo = mainController.createEndpointObj(mainController.endpoints[e]);
+      let epInfo = factory.createEndpointObj(mainController.endpoints[e]);
 
       // if empty description default to: 
       if (!epInfo.description || epInfo.description == '') {  
@@ -180,15 +181,30 @@ const mainController = {
   
   respondResponseObj: (req, res, respObj) => {
 
-    console.log(`respondResponseObj([${ respObj.path }])`, respObj);
+    //console.log(`respondResponseObj([${ respObj.path }])`, respObj);
 
     if (!respObj.code || !respObj.body) {
     
       if (!respObj.body) { respObj = { body: respObj } }; // if we get a plain ojt, then it goes to the response body
 
-      respObj = mainController.createResponseObj({ response: respObj });
+      respObj = factory.createResponseObj({ response: respObj });
     }
 
+    // get/validate the responseType for this response
+    if (respObj.responseType != null) {
+
+      try {
+      
+        res.type(respObj.responseType);
+        
+        console.log(`mainController.respondResponseObj()> SET response type to [${ respObj.responseType }]`);
+        
+      } catch(errType) {
+      
+        console.log(`mainController.respondResponseObj()> Error setting response type to [${ respObj.responseType }]`, errType);
+      }
+    }
+    
     res.status(respObj.code).send(respObj.body);
   },
   
@@ -203,7 +219,7 @@ const mainController = {
 
     console.log('respondPostEndpoint> req.body:',  req.body);
 
-    let respObj = mainController.createEndpointObj(req.body);
+    let respObj = factory.createEndpointObj(req.body);
 
     if (!respObj.path) { 
     
@@ -221,55 +237,6 @@ const mainController = {
       message: `endpoint created at [${ respObj.path }]`
     });
   }, 
-
-  createEndpointObj: (reqObj) => {
-  
-    // this object holds the data about the endpoints we respond to:
-    /*
-      {
-        path: '', //mandatory
-        response: responseObj
-      }
-      */
-
-    //console.log('READ OBJ::', reqObj);
-
-    let endpointObj = { path: '', response: {} };
-
-    Object.assign(endpointObj, reqObj);
-
-    if (reqObj.response) {
-    
-      endpointObj.response = mainController.createResponseObj({ response: reqObj.response });  // validates that .response is a cool ojb like we need
-    }
-
-    if (!endpointObj.path || endpointObj.path == '') { endpointObj.path = '/'; }                 // if empty default to root
-    if (endpointObj.path[0] != '/')                  { endpointObj.path = '/' + endpointObj.path; }   // if doesn't start with / then add it
-
-    //console.log('RETURN OBJ::', endpointObj);
-
-    return endpointObj;
-  },
-
-  createResponseObj: (reqObj) => {
-  
-    // this object holds the final data we need to send back;
-    /*
-      {
-        body: {} // object or string
-        code: number, // defaults to 200
-        filePath: '', // optional, if included then we respond with a file
-        fileEncoding: '', // optional, if filePath then may open with this encoding
-        redirectUrl: '', // optional, if present, redirects
-        redirectIfNoTokenUrl: '', // optional, if present and no auth token present, redirects
-      }
-      */
-    let respObj = { code: 200 };
-    
-    Object.assign(respObj, (reqObj.response || { body: reqObj.description || 'EMPTY_RESPONSE' }));
-
-    return respObj;
-  },
 
   runResponse: (req, res, endpointInfo) => {
 
@@ -291,7 +258,7 @@ const mainController = {
         // if response, must have body validation:
         if (endpointInfo.response && !endpointInfo.response.body) { endpointInfo.response.body = 'EMPTY_RESPONSE'; };
 
-        let respObj = mainController.createResponseObj(endpointInfo);
+        let respObj = factory.createResponseObj(endpointInfo);
 
         console.log('respObj>>>', respObj);
 
